@@ -1,5 +1,6 @@
 mod tf-ctc
 mod tf-tools
+mod tf-serving
 
 VENV := ".venv"
 PYTHON := ".venv/bin/python"

@@ -4,3 +4,4 @@
 
 - [`tf-ctc`](tf-ctc): tools to simplify CTC in TensorFlow
 - [`tf-tools`](tf-tools): general tools for TensorFlow
+- [`tf-serving`](tf-serving): client for OCR predictions against TensorFlow Serving

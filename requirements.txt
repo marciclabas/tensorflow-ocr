@@ -1,3 +1,7 @@
 build
 twine
 ipykernel
+-e tf-tools
+-e tf-ctc
+-e tf-serving
+cit-images
