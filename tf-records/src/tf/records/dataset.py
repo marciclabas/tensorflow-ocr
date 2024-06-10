@@ -50,10 +50,10 @@ def glob(glob: str, *, recursive: bool = False, err_stream: TextIO | None = None
         print(f'Error reading dataset at {p}:', e, file=err_stream)
   return datasets
 
-def chain(datasets: Iterable[Dataset], *, keep_order: bool = True):
+def chain(datasets: Iterable[Dataset], *, keep_order: bool = True, batch_size: int | None = None):
   """Chain multiple datasets into a single one."""
   import tensorflow as tf
-  ds = Iter(datasets).map(lambda ds: ds.iterate(keep_order=keep_order)).reduce(tf.data.Dataset.concatenate)
+  ds = Iter(datasets).map(lambda ds: ds.iterate(keep_order=keep_order, batch_size=batch_size)).reduce(tf.data.Dataset.concatenate)
   return ds or tf.data.Dataset.from_tensors({})
 
 def len(datasets: Iterable[Dataset]) -> int | None:
