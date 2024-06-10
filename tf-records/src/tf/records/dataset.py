@@ -15,16 +15,25 @@ class Dataset:
       meta = MetaJson.model_validate_json(f.read()).tfrecords_dataset
     return cls(meta, path)
   
-  def iterate(self, *, keep_order: bool = True):
+  def iterate(self, *, keep_order: bool = True, batch_size: int | None = None):
+    """Read the dataset as a tf.data.Dataset
+    - `batch_size`: if provided, read the dataset in batches (often provides a significant speedup, above 2x)
+    """
     files = self.meta.files
     if isinstance(files, str):
       from glob import glob
       files = glob(f'{self.base_path}/{files}')
 
-    return tfr.read(
-      self.meta.schema_, files,
-      compression=self.meta.compression, keep_order=keep_order
-    )
+    if batch_size is None:
+      return tfr.read(
+        self.meta.schema_, files,
+        compression=self.meta.compression, keep_order=keep_order
+      )
+    else:
+      return tfr.batched_read(
+        self.meta.schema_, files,
+        compression=self.meta.compression, keep_order=keep_order, batch_size=batch_size
+      )
   
   def len(self) -> int | None:
     return self.meta.num_samples

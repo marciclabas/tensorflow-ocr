@@ -4,4 +4,5 @@ ipykernel
 -e tf-tools
 -e tf-ctc
 -e tf-serving
+-e tf-records
 cit-images
