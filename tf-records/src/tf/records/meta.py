@@ -12,9 +12,9 @@ class Tensor:
 Field: TypeAlias = Tensor | DType
 
 class Meta(BaseModel):
-  files: str | Sequence[str]
+  files: str | Sequence[str] = '*.tfrecord.gz'
   compression: Literal['GZIP', 'ZLIB'] | None = None
-  schema_: Mapping[str, Field] = PyField(validation_alias='schema', serialization_alias='schema')
+  schema_: Mapping[str, Field] = PyField(alias='schema')
   num_samples: int | None = None
 
 class MetaJson(BaseModel):

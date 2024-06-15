@@ -1,14 +1,25 @@
-from typing_extensions import TypedDict, NotRequired, Sequence, overload
+from typing_extensions import TypedDict, NotRequired, Sequence, Literal
+from dataclasses import dataclass
 import aiohttp
 from haskellian import Either, Left, Right
-from .types import TFSResponse, ImagePreds
+from .types import TFSResponse, TFSOk, TFSError, ImagePreds
 
 class Params(TypedDict):
   host: NotRequired[str]
   port: NotRequired[int]
   endpoint: NotRequired[str]
 
-PredictErr = aiohttp.ClientError
+@dataclass
+class ConnectionError:
+  error: aiohttp.ClientError
+  tag: Literal['connection-error'] = 'connection-error'
+
+@dataclass
+class TFServingError:
+  error: str
+  tag: Literal['tfserving-error'] = 'tfserving-error'
+
+PredictErr = ConnectionError | TFServingError
 
 async def predict(
   b64imgs: Sequence[str], *,
@@ -26,8 +37,12 @@ async def predict(
       })
       async with req as res:
         x = await res.text()
-        return Right(TFSResponse.model_validate_json(x).predictions)
+        match TFSResponse.model_validate_json(x).root:
+          case TFSOk() as ok:
+            return Right(ok.predictions)
+          case TFSError() as err:
+            return Left(TFServingError(err.error))
       
   except aiohttp.ClientError as e:
-    return Left(e)
+    return Left(ConnectionError(e))
     
