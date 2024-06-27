@@ -1,5 +1,6 @@
 from typing_extensions import TypedDict, NotRequired, Sequence, Literal
 from dataclasses import dataclass
+from pydantic import ValidationError
 import aiohttp
 from haskellian import Either, Left, Right
 from .types import TFSResponse, TFSOk, TFSError, ImagePreds
@@ -19,7 +20,12 @@ class TFServingError:
   error: str
   tag: Literal['tfserving-error'] = 'tfserving-error'
 
-PredictErr = ConnectionError | TFServingError
+@dataclass
+class UnknownError:
+  error: str
+  tag: Literal['unknown-error'] = 'unknown-error'
+
+PredictErr = ConnectionError | TFServingError | UnknownError
 
 async def predict(
   b64imgs: Sequence[str], *,
@@ -37,11 +43,14 @@ async def predict(
       })
       async with req as res:
         x = await res.text()
-        match TFSResponse.model_validate_json(x).root:
-          case TFSOk() as ok:
-            return Right(ok.predictions)
-          case TFSError() as err:
-            return Left(TFServingError(err.error))
+        try:
+          match TFSResponse.model_validate_json(x).root:
+            case TFSOk() as ok:
+              return Right(ok.predictions)
+            case TFSError() as err:
+              return Left(TFServingError(err.error))
+        except ValidationError as e:
+          return Left(UnknownError(str(x)))
       
   except aiohttp.ClientError as e:
     return Left(ConnectionError(e))

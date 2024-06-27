@@ -31,6 +31,8 @@ class Dataset:
         random.shuffle(files)
       else:
         files.sort()
+    else:
+      files = [f'{self.base_path}/{f}' for f in files]
 
     keep_order = mode == 'keep_order'
     if batch_size is None:
