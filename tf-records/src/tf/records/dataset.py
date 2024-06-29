@@ -1,6 +1,5 @@
 from typing import Sequence, TextIO, Literal
 from dataclasses import dataclass
-from haskellian import Iter
 import tf.records as tfr
 from .meta import Meta, MetaJson
 
