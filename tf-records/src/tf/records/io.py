@@ -13,11 +13,11 @@ def write(records: Iterable[bytes], filepath: str, *, compression: Literal['GZIP
 def read(
   schema: Mapping[str, tfr.Field], filepaths: Iterable[str], *,
   compression: Literal['GZIP', 'ZLIB'] | None = None,
-  keep_order: bool = True
+  deterministic: bool = True
 ) -> tf.data.Dataset:
   """Parse a series of TFRecord files into a single dataset"""
   ignore_order = tf.data.Options()
-  ignore_order.experimental_deterministic = keep_order
+  ignore_order.deterministic = deterministic
   return (
     tf.data.TFRecordDataset(filepaths, compression_type=compression, num_parallel_reads=tf.data.AUTOTUNE)
     .with_options(ignore_order)
@@ -27,11 +27,11 @@ def read(
 def batched_read(
   schema: Mapping[str, tfr.Field], filepaths: Iterable[str], *,
   compression: Literal['GZIP', 'ZLIB'] | None = None,
-  keep_order: bool = True, batch_size: int = 32
+  deterministic: bool = True, batch_size: int = 32
 ) -> tf.data.Dataset:
   """Parse a series of TFRecord files into a single dataset"""
   ignore_order = tf.data.Options()
-  ignore_order.experimental_deterministic = keep_order
+  ignore_order.deterministic = deterministic
   return (
     tf.data.TFRecordDataset(filepaths, compression_type=compression, num_parallel_reads=tf.data.AUTOTUNE)
     .with_options(ignore_order)
