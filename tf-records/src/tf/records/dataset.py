@@ -67,11 +67,11 @@ def glob(glob: str, *, recursive: bool = False, err_stream: TextIO | None = None
         print(f'Error reading dataset at {p}:', e, file=err_stream)
   return datasets
 
-def concat(datasets: Sequence[Dataset], *, mode: Literal['ordered', 'shuffle'] | None = 'ordered', batch_size: int | None = None):
+def concat(datasets: Sequence[Dataset], *, mode: Literal['ordered', 'shuffle', 'deterministic'] | None = 'deterministic', batch_size: int | None = None):
   """Concatenate multiple datasets into a single one."""
   return tft.data.concat([ds.iterate(mode=mode, batch_size=batch_size) for ds in datasets])
 
-def interleave(datasets: Sequence[Dataset], *, block_length: int = 1, mode: Literal['ordered', 'shuffle'] | None = 'ordered', batch_size: int | None = None):
+def interleave(datasets: Sequence[Dataset], *, block_length: int = 1, mode: Literal['ordered', 'shuffle', 'deterministic'] | None = 'deterministic', batch_size: int | None = None):
   """Interleave multiple datasets into a single one."""
   return tft.data.interleave([ds.iterate(mode=mode, batch_size=batch_size) for ds in datasets], block_length=block_length)
 
