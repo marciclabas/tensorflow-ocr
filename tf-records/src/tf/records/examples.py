@@ -1,6 +1,6 @@
 from typing import Mapping, Protocol
 import tensorflow as tf
-from .meta import Field, DType, Tensor
+from .meta import Field, DType, Tensor, SeqTensor
 
 def schema(**fields: Field) -> Mapping[str, Field]:
   """Create a type specification to read/write into TFRecords."""
@@ -23,6 +23,8 @@ def feature(schema: Field) -> tf.io.FixedLenFeature:
   match schema:
     case Tensor(shape, dtype):
       return tf.io.FixedLenFeature(shape, tf_dtype(dtype))
+    case SeqTensor(shape, dtype):
+      return tf.io.FixedLenSequenceFeature(shape, tf_dtype(dtype), allow_missing=True)
     case 'string':
       return tf.io.FixedLenFeature([], tf.string)
     case 'float':
@@ -41,6 +43,11 @@ class parse:
   def batch(self, record: tf.Tensor | bytes):
     return tf.io.parse_example(record, self.features)
   
+def to_numpy(tensor):
+  if isinstance(tensor, tf.Tensor):
+    return to_numpy(tensor)
+  return tensor
+  
 def serialize_field(field: Field, tensor) -> Feature:
   match field:
     case Tensor(shape, dtype):
@@ -48,20 +55,30 @@ def serialize_field(field: Field, tensor) -> Feature:
       assert dtype in repr(tensor.dtype), f"Expected dtype {dtype}, got {tensor.dtype}"
       match dtype:
         case 'float':
-          return tf.train.Feature(float_list=tf.train.FloatList(value=tensor.numpy().flatten())) # type: ignore
+          return tf.train.Feature(float_list=tf.train.FloatList(value=to_numpy(tensor).flatten())) # type: ignore
         case 'int':
-          return tf.train.Feature(int64_list=tf.train.Int64List(value=tensor.numpy().flatten()))
+          return tf.train.Feature(int64_list=tf.train.Int64List(value=to_numpy(tensor).flatten()))
         case 'string':
-          return tf.train.Feature(bytes_list=tf.train.BytesList(value=[tensor.numpy().flatten()]))
+          return tf.train.Feature(bytes_list=tf.train.BytesList(value=[to_numpy(tensor).flatten()]))
+    case SeqTensor(shape, dtype):
+      assert shape == tensor.shape[1:], f"Expected shape [None] + {shape}, got {tensor.shape}"
+      assert dtype in repr(tensor.dtype), f"Expected dtype {dtype}, got {tensor.dtype}"
+      match dtype:
+        case 'float':
+          return tf.train.Feature(float_list=tf.train.FloatList(value=to_numpy(tensor).flatten())) # type: ignore
+        case 'int':
+          return tf.train.Feature(int64_list=tf.train.Int64List(value=to_numpy(tensor).flatten()))
+        case 'string':
+          return tf.train.Feature(bytes_list=tf.train.BytesList(value=[to_numpy(tensor).flatten()]))
     case 'string':
       assert tensor.dtype == tf.string, f"Expected dtype string, got {tensor.dtype}"
-      return tf.train.Feature(bytes_list=tf.train.BytesList(value=[tensor.numpy()])) # type: ignore
+      return tf.train.Feature(bytes_list=tf.train.BytesList(value=[to_numpy(tensor)])) # type: ignore
     case 'float':
       assert tensor.dtype == tf.float32, f"Expected dtype float32, got {tensor.dtype}"
-      return tf.train.Feature(float_list=tf.train.FloatList(value=tensor.numpy().flatten())) # type: ignore
+      return tf.train.Feature(float_list=tf.train.FloatList(value=to_numpy(tensor).flatten())) # type: ignore
     case 'int':
       assert tensor.dtype == tf.int64, f"Expected dtype int64, got {tensor.dtype}"
-      return tf.train.Feature(int64_list=tf.train.Int64List(value=tensor.numpy().flatten()))
+      return tf.train.Feature(int64_list=tf.train.Int64List(value=to_numpy(tensor).flatten()))
   
 def serialize(schema: Mapping[str, Field], **tensors) -> bytes:
   features = { name: serialize_field(schema[name], tensor) for name, tensor in tensors.items() }

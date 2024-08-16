@@ -6,10 +6,19 @@ DType: TypeAlias = Literal['float', 'int', 'string']
 
 @dataclass
 class Tensor:
+  """A dense tensor with fixed shape"""
   shape: Sequence[int]
   dtype: DType
 
-Field: TypeAlias = Tensor | DType
+@dataclass
+class SeqTensor:
+  """A dense tensor with variable first axis"""
+  shape: Sequence[int]
+  """Shape without the first axis, which is set to `None`"""
+  dtype: DType
+  tag: Literal['sequence'] = 'sequence'
+
+Field: TypeAlias = Tensor | SeqTensor | DType
 
 class Meta(BaseModel):
   files: str | Sequence[str] = '*.tfrecord.gz'
