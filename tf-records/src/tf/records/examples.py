@@ -19,7 +19,7 @@ def tf_dtype(type: DType) -> tf.DType:
     case 'string':
       return tf.string
 
-def feature(schema: Field) -> tf.io.FixedLenFeature:
+def feature(schema: Field):
   match schema:
     case Tensor(shape, dtype):
       return tf.io.FixedLenFeature(shape, tf_dtype(dtype))
@@ -45,7 +45,7 @@ class parse:
   
 def to_numpy(tensor):
   if isinstance(tensor, tf.Tensor):
-    return to_numpy(tensor)
+    return tensor.numpy() # type: ignore
   return tensor
   
 def serialize_field(field: Field, tensor) -> Feature:
